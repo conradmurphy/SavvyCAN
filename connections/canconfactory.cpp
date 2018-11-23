@@ -9,7 +9,9 @@ CANConnection* CanConFactory::create(type pType, QString pPortName)
 {
     switch(pType) {
     case SOCKETCAN:
-        return new SerialBusConnection(pPortName);
+        return new SerialBusConnection(pPortName, CANCon::SOCKETCAN);
+    case KVASER:
+        return new SerialBusConnection(pPortName, CANCon::KVASER);
     case GVRET_SERIAL:
         return new GVRetSerial(pPortName, false);
     case REMOTE:

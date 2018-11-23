@@ -44,9 +44,9 @@ ConnectionWindow::ConnectionWindow(QWidget *parent) :
     loadConnections();
 
     ui->rbSocketCAN->setEnabled(isSocketCanAvailable());
-#ifdef Q_OS_WIN
+// #ifdef Q_OS_WIN
     ui->rbKvaser->setEnabled(true);
-#endif
+// #endif
 
     connect(ui->btnOK, &QAbstractButton::clicked, this, &ConnectionWindow::handleOKButton);
     connect(ui->rbGVRET, &QAbstractButton::clicked, this, &ConnectionWindow::handleConnTypeChanged);
@@ -244,14 +244,17 @@ void ConnectionWindow::connectionStatus(CANConStatus pStatus)
 void ConnectionWindow::handleOKButton()
 {
     CANConnection* conn_p = NULL;
+    QTextStream(stdout) << "handleOKButton" << endl;
 
     if( ! CANConManager::getInstance()->getByName(getPortName()) )
     {
         /* create connection */
+        QTextStream(stdout) << "Creating Connection" << endl;
         conn_p = create(getConnectionType(), getPortName());
         if(!conn_p)
             return;
         /* add connection to model */
+        QTextStream(stdout) << "Adding to Model" << endl;
         connModel->add(conn_p);
         consoleEnableChanged(ui->ckEnableConsole->isChecked());
     }
@@ -342,9 +345,33 @@ void ConnectionWindow::selectSerial()
 
 void ConnectionWindow::selectKvaser()
 {
-    ui->lPort->setText("Port:");
+    ui->lPort->setText("CAN Port:");
     /* set combobox page visible */
     ui->stPort->setCurrentWidget(ui->cbPage);
+
+    ui->cbPort->clear();
+    QString errorString;
+    const QList<QCanBusDeviceInfo> devices = QCanBus::instance()->availableDevices(QStringLiteral("peakcan"), &errorString);
+    if(QCanBus::instance()->plugins().contains(QStringLiteral("peakcan")))
+        QTextStream(stdout) << "PeakCAN Installed" << endl;
+    else{
+        QTextStream(stdout) << "PeakCAN Not Installed" << endl;
+    }
+    QTextStream(stdout) << "CAN Devices:" << endl;
+    for (int i = 0; i < devices.count(); i++){
+        ui->cbPort->addItem(devices[i].name());
+        QTextStream(stdout) << devices[i].name() << endl;
+    }
+
+    /* Try to create USB0
+    QCanBusDevice *device = QCanBus::instance()->createDevice(
+        QStringLiteral("peakcan"), QStringLiteral("usb0"), &errorString);
+    if (!device) {
+        // Error handling goes here
+        QTextStream(stdout) << errorString;
+    } else {
+        QTextStream(stdout) << "CAN USB0 connected" << endl;
+    }*/
 }
 
 void ConnectionWindow::selectSocketCan()
@@ -415,6 +442,7 @@ QString ConnectionWindow::getPortName()
     switch( getConnectionType() ) {
     case CANCon::GVRET_SERIAL:
     case CANCon::KVASER:
+        QTextStream(stdout)  << "getPortName: " << ui->cbPort->currentText() << endl;
         return ui->cbPort->currentText();
     case CANCon::SOCKETCAN:
     case CANCon::REMOTE:

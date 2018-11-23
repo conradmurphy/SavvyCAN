@@ -11,8 +11,8 @@
 /****    class definition       ****/
 /***********************************/
 
-SerialBusConnection::SerialBusConnection(QString portName) :
-    CANConnection(portName, CANCon::SOCKETCAN, 1, 4000, true),
+SerialBusConnection::SerialBusConnection(QString portName, CANCon::type pType) :
+    CANConnection(portName, pType, 1, 4000, true),
     mTimer(this) /*NB: set connection as parent of timer to manage it from working thread */
 {
 }
@@ -77,7 +77,14 @@ void SerialBusConnection::piSetBusSettings(int pBusIdx, CANBus bus)
 
     /* create device */
     QString errorString;
-    mDev_p = QCanBus::instance()->createDevice("socketcan", getPort(), &errorString);
+    switch(getType()) {
+        case CANCon::SOCKETCAN:
+             mDev_p = QCanBus::instance()->createDevice("socketcan", getPort(), &errorString);
+        case CANCon::KVASER:
+             mDev_p = QCanBus::instance()->createDevice("peakcan", getPort(), &errorString);
+        default: { mDev_p = NULL;}
+    }
+
     if (!mDev_p) {
         disconnectDevice();
         qDebug() << "Error: createDevice(" << getType() << getPort() << "):" << errorString;
