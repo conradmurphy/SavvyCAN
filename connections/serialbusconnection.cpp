@@ -12,6 +12,7 @@
 /***********************************/
 
 SerialBusConnection::SerialBusConnection(QString portName, CANCon::type pType) :
+    // CANConnection(portName, pType, 1, 4000, true),
     CANConnection(portName, pType, 1, 4000, true),
     mTimer(this) /*NB: set connection as parent of timer to manage it from working thread */
 {
@@ -32,6 +33,7 @@ void SerialBusConnection::piStarted()
     mTimer.start();
     mBusData[0].mBus.setEnabled(true);
     mBusData[0].mConfigured = true;
+    QTextStream(stdout) << "SerialBusConnection::piStarted() called" << endl;
 }
 
 
@@ -60,6 +62,7 @@ bool SerialBusConnection::piGetBusSettings(int pBusIdx, CANBus& pBus)
 
 void SerialBusConnection::piSetBusSettings(int pBusIdx, CANBus bus)
 {
+    QTextStream(stdout) << "SerialBusConnection::piSetBusSettings() called" << endl;
     CANConStatus stats;
     /* sanity checks */
     if(0 != pBusIdx)
@@ -80,21 +83,24 @@ void SerialBusConnection::piSetBusSettings(int pBusIdx, CANBus bus)
     switch(getType()) {
         case CANCon::SOCKETCAN:
              mDev_p = QCanBus::instance()->createDevice("socketcan", getPort(), &errorString);
+             break;
         case CANCon::KVASER:
              mDev_p = QCanBus::instance()->createDevice("peakcan", getPort(), &errorString);
+             QTextStream(stdout) << "Created CAN device" << mDev_p << endl;
+             break;
         default: { mDev_p = NULL;}
     }
 
     if (!mDev_p) {
         disconnectDevice();
-        qDebug() << "Error: createDevice(" << getType() << getPort() << "):" << errorString;
+        QTextStream(stdout) << "Error: createDevice(" << getType() << getPort() << "):" << errorString << endl;
         return;
     }
 
     /* connect slots */
-    connect(mDev_p, &QCanBusDevice::errorOccurred, this, &SerialBusConnection::errorReceived);
-    connect(mDev_p, &QCanBusDevice::framesWritten, this, &SerialBusConnection::framesWritten);
-    connect(mDev_p, &QCanBusDevice::framesReceived, this, &SerialBusConnection::framesReceived);
+    // connect(mDev_p, &QCanBusDevice::errorOccurred, this, &SerialBusConnection::errorReceived);
+    // connect(mDev_p, &QCanBusDevice::framesWritten, this, &SerialBusConnection::framesWritten);
+    // connect(mDev_p, &QCanBusDevice::framesReceived, this, &SerialBusConnection::framesReceived);
 
     /* set configuration */
     /*if (p.useConfigurationEnabled) {
@@ -103,12 +109,17 @@ void SerialBusConnection::piSetBusSettings(int pBusIdx, CANBus bus)
     }*/
 
     //You cannot set the speed of a socketcan interface, it has to be set with console commands.
-    //mDev_p->setConfigurationParameter(QCanBusDevice::BitRateKey, bus.speed);
+    mDev_p->setConfigurationParameter(QCanBusDevice::BitRateKey, bus.speed);
+    mDev_p->setConfigurationParameter(QCanBusDevice::LoopbackKey , false);
+    mDev_p->setConfigurationParameter(QCanBusDevice::CanFdKey , false);
 
     /* connect device */
+    QTextStream(stdout) << "Trying to connect(" << getType() << getPort() << ") " << endl;
     if (!mDev_p->connectDevice()) {
         disconnectDevice();
-        qDebug() << "can't connect device";
+        QTextStream(stdout) << "Error: Couldn't connect(" << getType() << getPort() << ") " << endl;
+    }else {
+        QTextStream(stdout) << "Connected (" << getType() << getPort() << ") " << endl;
     }
 }
 
@@ -142,6 +153,7 @@ bool SerialBusConnection::piSendFrame(const CANFrame& pFrame)
 
 /* disconnect device */
 void SerialBusConnection::disconnectDevice() {
+    QTextStream(stdout) << "disconnectDevice " << endl;
     if(mDev_p) {
         mDev_p->disconnectDevice();
         delete mDev_p;
@@ -175,6 +187,7 @@ void SerialBusConnection::framesReceived()
 {
     uint64_t timeBasis = CANConManager::getInstance()->getTimeBasis();
 
+    QTextStream(stdout) << "SerialBusConnection::framesReceived(): " << timeBasis <<endl;
     /* sanity checks */
     if(!mDev_p)
         return;
@@ -262,45 +275,31 @@ void SerialBusConnection::framesReceived()
 
 
 void SerialBusConnection::testConnection() {
-    QCanBusDevice*  dev_p = QCanBus::instance()->createDevice("socketcan", getPort());
+
+    // QTextStream(stdout) << "SerialBusConnection::testConnection() called" << endl;
+    QCanBusDevice*  dev_p;
     CANConStatus stats;
 
-    switch(getStatus())
-    {
-        case CANCon::CONNECTED:
-            if (!dev_p || !dev_p->connectDevice()) {
-                /* we have lost connectivity */
-                disconnectDevice();
-
-                setStatus(CANCon::NOT_CONNECTED);
-                stats.conStatus = getStatus();
-                stats.numHardwareBuses = mNumBuses;
-                emit status(stats);
-            }
-            break;
-        case CANCon::NOT_CONNECTED:
-            if (dev_p && dev_p->connectDevice()) {
-                if(!mDev_p) {
-                    /* try to reconnect */
-                    CANBus bus;
-                    if(getBusConfig(0, bus))
-                    {
-                        bus.setEnabled(true);
-                        setBusSettings(0, bus);
-                    }
-                }
-                /* disconnect test instance */
-                dev_p->disconnectDevice();
-
-                setStatus(CANCon::CONNECTED);
-                stats.conStatus = getStatus();
-                stats.numHardwareBuses = mNumBuses;
-                emit status(stats);
-            }
-            break;
-        default: {}
+    if(mDev_p){
+        QCanBusDevice::CanBusDeviceState state = mDev_p->state();
+        qint64  nFrames = -1; //mDev_p->framesAvailable();
+        QTextStream(stdout) << "SerialBusConnection::testConnection(): CANBus State=" << state << " CANBus Frames=" << nFrames << endl;
+        QTextStream(stdout) << "Last Error=" << mDev_p->errorString() << endl;
+        if ((getStatus()==CANCon::NOT_CONNECTED) && (state == QCanBusDevice::ConnectedState)){
+            setStatus(CANCon::CONNECTED);
+            stats.conStatus = getStatus();
+            stats.numHardwareBuses = mNumBuses;
+            emit status(stats);
+            QTextStream(stdout) << "Setting CANBus state to Connected" << endl;
+        }
+        if (getStatus()!=CANCon::CONNECTED && state != QCanBusDevice::ConnectedState){
+            setStatus(CANCon::NOT_CONNECTED);
+            stats.conStatus = getStatus();
+            stats.numHardwareBuses = mNumBuses;
+            emit status(stats);
+        }
+    }else{
+        QTextStream(stdout) << "SerialBusConnection::testConnection() has no CANBusDevice" << endl;
+        return;
     }
-
-    if(dev_p)
-        delete dev_p;
 }

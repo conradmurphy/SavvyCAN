@@ -154,14 +154,17 @@ void ConnectionWindow::setSuspendAll(bool pSuspend)
 
 void ConnectionWindow::setActiveAll(bool pActive)
 {
+    QTextStream(stdout) << "ConnectionWindow::setActiveAll called" << endl;
     CANBus bus;
     QList<CANConnection*>& conns = CANConManager::getInstance()->getConnections();
 
     foreach(CANConnection* conn_p, conns)
     {
         for(int i=0 ; i<conn_p->getNumBuses() ; i++) {
+            QTextStream(stdout) << "Found Bus: " <<  conn_p->getPort() <<endl;
             if( conn_p->getBusSettings(i, bus) ) {
                 bus.active = pActive;
+                QTextStream(stdout) << "Setting Bus Setting for " <<  conn_p->getPort() <<endl;
                 conn_p->setBusSettings(i, bus);
             }
         }
