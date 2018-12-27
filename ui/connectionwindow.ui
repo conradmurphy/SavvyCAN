@@ -81,6 +81,23 @@
         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
        </property>
        <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="1">
+         <widget class="QRadioButton" name="rbRemote">
+          <property name="text">
+           <string>Remote Host</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QRadioButton" name="rbSocketCAN">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>SocketCAN</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <widget class="QRadioButton" name="rbKvaser">
           <property name="enabled">
@@ -101,20 +118,10 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QRadioButton" name="rbSocketCAN">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
+        <item row="2" column="0">
+         <widget class="QRadioButton" name="rbPeakCANOSX">
           <property name="text">
-           <string>SocketCAN</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QRadioButton" name="rbRemote">
-          <property name="text">
-           <string>Remote Host</string>
+           <string>PeakCAN OSX</string>
           </property>
          </widget>
         </item>

@@ -70,6 +70,7 @@ private:
     void selectKvaser();
     void selectSocketCan();
     void selectRemote();
+    void selectPeakCANOSX();
     bool isSocketCanAvailable();
     int getSpeed();
     QString getPortName();

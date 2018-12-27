@@ -169,6 +169,7 @@ QVariant CANConnectionModel::data(const QModelIndex &index, int role) const
                         case CANCon::KVASER: return "KVASER";
                         case CANCon::SOCKETCAN: return "SocketCAN";
                         case CANCon::GVRET_SERIAL: return "GVRET";
+                        case CANCon::PEAKCAN_MAC: return "PCAN MAC";
                         default: {}
                     }
                 else qDebug() << "Tried to show connection type but connection was NULL";

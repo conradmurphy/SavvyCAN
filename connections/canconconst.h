@@ -18,6 +18,7 @@ namespace CANCon {
         KVASER,
         SOCKETCAN,
         REMOTE,
+        PEAKCAN_MAC,
         NONE
     };
 }

@@ -65,7 +65,8 @@ SOURCES += main.cpp\
     jsedit.cpp \
     frameplaybackobject.cpp \
     helpwindow.cpp \
-    blfhandler.cpp
+    blfhandler.cpp \
+    connections/peakcanmac.cpp
 
 HEADERS  += mainwindow.h \
     can_structs.h \
@@ -121,7 +122,9 @@ HEADERS  += mainwindow.h \
     jsedit.h \
     frameplaybackobject.h \
     helpwindow.h \
-    blfhandler.h
+    blfhandler.h \
+    connections/peakcanmac.h \
+    connections/PCBUSB.h
 
 FORMS    += ui/candatagrid.ui \
     ui/connectionwindow.ui \
@@ -159,3 +162,8 @@ RESOURCES += \
 win32 {
    LIBS += opengl32.lib
 }
+
+macx: LIBS += -L$$PWD/../../../usr/local/lib/ -lPCBUSB
+
+INCLUDEPATH += $$PWD/../../../usr/local/include
+DEPENDPATH += $$PWD/../../../usr/local/include

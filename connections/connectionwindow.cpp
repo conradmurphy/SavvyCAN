@@ -53,6 +53,7 @@ ConnectionWindow::ConnectionWindow(QWidget *parent) :
     connect(ui->rbKvaser, &QAbstractButton::clicked, this, &ConnectionWindow::handleConnTypeChanged);
     connect(ui->rbSocketCAN, &QAbstractButton::clicked, this, &ConnectionWindow::handleConnTypeChanged);
     connect(ui->rbRemote, &QAbstractButton::clicked, this, &ConnectionWindow::handleConnTypeChanged);
+    connect(ui->rbPeakCANOSX, &QAbstractButton::clicked, this, &ConnectionWindow::handleConnTypeChanged);
     connect(ui->tableConnections->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &ConnectionWindow::currentRowChanged);
     connect(ui->btnActivateAll, &QPushButton::clicked, this, &ConnectionWindow::handleEnableAll);
     connect(ui->btnDeactivateAll, &QPushButton::clicked, this, &ConnectionWindow::handleDisableAll);
@@ -231,6 +232,7 @@ void ConnectionWindow::handleConnTypeChanged()
     if (ui->rbKvaser->isChecked()) selectKvaser();
     if (ui->rbSocketCAN->isChecked()) selectSocketCan();
     if (ui->rbRemote->isChecked()) selectRemote();
+    if (ui->rbPeakCANOSX->isChecked()) selectPeakCANOSX();
 }
 
 
@@ -365,16 +367,27 @@ void ConnectionWindow::selectKvaser()
         ui->cbPort->addItem(devices[i].name());
         QTextStream(stdout) << devices[i].name() << endl;
     }
+}
 
-    /* Try to create USB0
-    QCanBusDevice *device = QCanBus::instance()->createDevice(
-        QStringLiteral("peakcan"), QStringLiteral("usb0"), &errorString);
-    if (!device) {
-        // Error handling goes here
-        QTextStream(stdout) << errorString;
-    } else {
-        QTextStream(stdout) << "CAN USB0 connected" << endl;
-    }*/
+void ConnectionWindow::selectPeakCANOSX()
+{
+    ui->lPort->setText("CAN Port:");
+    /* set combobox page visible */
+    ui->stPort->setCurrentWidget(ui->cbPage);
+
+    ui->cbPort->clear();
+    QString errorString;
+    const QList<QCanBusDeviceInfo> devices = QCanBus::instance()->availableDevices(QStringLiteral("peakcan"), &errorString);
+    if(QCanBus::instance()->plugins().contains(QStringLiteral("peakcan")))
+        QTextStream(stdout) << "PeakCAN Installed" << endl;
+    else{
+        QTextStream(stdout) << "PeakCAN Not Installed" << endl;
+    }
+    QTextStream(stdout) << "CAN Devices:" << endl;
+    for (int i = 0; i < devices.count(); i++){
+        ui->cbPort->addItem(devices[i].name());
+        QTextStream(stdout) << devices[i].name() << endl;
+    }
 }
 
 void ConnectionWindow::selectSocketCan()
@@ -445,6 +458,7 @@ QString ConnectionWindow::getPortName()
     switch( getConnectionType() ) {
     case CANCon::GVRET_SERIAL:
     case CANCon::KVASER:
+    case CANCon::PEAKCAN_MAC:
         QTextStream(stdout)  << "getPortName: " << ui->cbPort->currentText() << endl;
         return ui->cbPort->currentText();
     case CANCon::SOCKETCAN:
@@ -463,6 +477,7 @@ CANCon::type ConnectionWindow::getConnectionType()
     if (ui->rbKvaser->isChecked()) return CANCon::KVASER;
     if (ui->rbSocketCAN->isChecked()) return CANCon::SOCKETCAN;
     if (ui->rbRemote->isChecked()) return CANCon::REMOTE;
+    if (ui->rbPeakCANOSX->isChecked()) return CANCon::PEAKCAN_MAC;
     qDebug() << "getConnectionType: error";
     return CANCon::NONE;
 }
